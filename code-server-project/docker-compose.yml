@@ -11,7 +11,7 @@ services:
     restart: always
     environment:
       - TZ=Europe/Rome
-      - CODE_SERVER_PASSWORD=${CODE_SERVER_PASSWORD}
+      - PASSWORD=codeserver!2025  # Fixed password
     volumes:
       - code_server_config:/home/coder/.config
       - code_server_data:/home/coder/project
