@@ -16,53 +16,23 @@ Template Docker per l'implementazione locale di n8n con integrazione di Ollama, 
    cd local-n8n-docker-template
    ```
 
-2. Crea la directory per code-server:
+2. Configura code-server:
    ```bash
-   mkdir code-server-project
    cd code-server-project
    ```
 
-3. Crea il file docker-compose.yml per code-server:
+3. Modifica il file .env per code-server:
    ```bash
-   cat > docker-compose.yml << 'EOL'
-   version: '3.8'
-
-   volumes:
-     code_server_config:
-     code_server_data:
-
-   services:
-     code-server:
-       image: codercom/code-server:latest
-       container_name: code-server
-       restart: always
-       environment:
-         - PUID=1000
-         - PGID=1000
-         - TZ=Europe/Rome
-         - CODE_SERVER_PASSWORD=${CODE_SERVER_PASSWORD}
-       volumes:
-         - code_server_config:/home/coder/.config
-         - code_server_data:/home/coder/project
-         - ../:/home/coder/project/workspace
-       ports:
-         - "8080:8080"
-   EOL
-   ```
-
-4. Crea il file .env per code-server:
-   ```bash
-   cat > .env << 'EOL'
+   # Imposta la password per l'accesso a code-server
    CODE_SERVER_PASSWORD=la_tua_password
-   EOL
    ```
 
-5. Avvia code-server:
+4. Avvia code-server:
    ```bash
    docker compose up -d
    ```
 
-6. Accedi all'editor web:
+5. Accedi all'editor web:
    - URL: http://tuo-server:8080
    - Usa la password configurata nel file .env
 
@@ -113,6 +83,9 @@ Il progetto è diviso in due parti:
    - Editor web basato su VS Code
    - Accesso alla directory parent per editing remoto
    - Configurazione persistente
+   - File di configurazione:
+     - `docker-compose.yml`: Configurazione del container code-server
+     - `.env`: Configurazione della password di accesso
 
 ## Gestione dei Servizi
 
@@ -147,4 +120,5 @@ Il progetto è diviso in due parti:
 - Code-server supporta estensioni e temi di VS Code
 - Il progetto n8n è accessibile solo via HTTPS (porta 443)
 - Code-server è accessibile via HTTP (porta 8080)
-- Tutti i servizi sono configurati per riavviarsi automaticamente in caso di crash 
+- Tutti i servizi sono configurati per riavviarsi automaticamente in caso di crash
+- **Sicurezza**: Code-server è accessibile solo via HTTP e dovrebbe essere utilizzato solo in ambiente locale o attraverso una VPN. Assicurati di utilizzare una password forte nel file .env. 
