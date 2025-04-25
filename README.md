@@ -17,26 +17,36 @@ Template Docker per l'implementazione locale di n8n con integrazione di Ollama, 
    cd local-n8n-docker-template
    ```
 
-2. Configura il file .env:
+2. Genera le chiavi di sicurezza per n8n:
    ```bash
-   # Copia il file .env.example
-   cp .env.example .env
+   # Rendi eseguibile lo script
+   chmod +x generate-keys.sh
    
-   # Modifica il file .env con le tue impostazioni
+   # Esegui lo script per generare le chiavi
+   ./generate-keys.sh
+   ```
+   Questo script:
+   - Crea un file `.env` se non esiste già
+   - Genera chiavi casuali per `N8N_ENCRYPTION_KEY` e `N8N_USER_MANAGEMENT_JWT_SECRET`
+   - Aggiorna `.env` con queste chiavi
+
+3. Modifica il file `.env` se necessario:
+   ```bash
+   # Personalizza altre variabili d'ambiente
    nano .env
    ```
 
-3. Avvia l'intero stack con un solo comando:
+4. Avvia l'intero stack con un solo comando:
    ```bash
    docker compose up -d
    ```
 
-4. Verifica che tutti i servizi siano in esecuzione:
+5. Verifica che tutti i servizi siano in esecuzione:
    ```bash
    docker compose ps
    ```
 
-5. Accedi ai servizi:
+6. Accedi ai servizi:
    - **n8n**: https://tuo-server/
    - **code-server**: https://tuo-server/code/ (password: codeserver!2025)
 
