@@ -21,8 +21,6 @@ RUN apt-get update && apt-get install -y \
     libxmlsec1-dev \
     libffi-dev \
     liblzma-dev \
-    nvidia-cuda-toolkit \
-    nvidia-cuda-toolkit-gcc \
     && rm -rf /var/lib/apt/lists/*
 
 # Installa Python 3.12
@@ -40,17 +38,21 @@ RUN ln -sf /usr/bin/python3.12 /usr/bin/python3 && \
     ln -sf /usr/local/bin/pip3.12 /usr/bin/pip3 && \
     ln -sf /usr/local/bin/pip3.12 /usr/bin/pip
 
-# Installa librerie Python per ML/AI
+# Installa librerie Python per ML/AI senza dipendenze CUDA
+# Le librerie useranno CUDA dall'host se disponibile
 RUN pip install --no-cache-dir \
     numpy \
     pandas \
     matplotlib \
     scikit-learn \
-    tensorflow \
-    torch \
-    torchvision \
     jupyterlab \
     ipykernel
+
+# Installa TensorFlow e PyTorch (useranno CUDA dall'host se disponibile)
+RUN pip install --no-cache-dir \
+    tensorflow \
+    torch \
+    torchvision
 
 # Installa Node.js
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
