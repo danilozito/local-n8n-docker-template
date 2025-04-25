@@ -15,8 +15,11 @@ services:
       - TZ=Europe/Rome
       - CODE_SERVER_PASSWORD=${CODE_SERVER_PASSWORD}
     volumes:
-      - code_server_config:/home/coder/.config
-      - code_server_data:/home/coder/project
-      - ../:/home/coder/project/workspace
+      - code_server_config:/home/coder/.config:rw
+      - code_server_data:/home/coder/project:rw
+      - ../:/home/coder/project/workspace:rw
     ports:
-      - "8080:8080" 
+      - "8080:8080"
+    user: "1000:1000"
+    networks:
+      - default 
