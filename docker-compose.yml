@@ -6,10 +6,13 @@ volumes:
   ollama_storage:
   qdrant_storage:
   nginx_ssl:
+  code_server_config:
+  code_server_data:
+  workspace_projects:
 
 networks:
-  n8n_internal:
-    internal: true
+  n8n_network:
+    driver: bridge
 
 services:
   postgres:
@@ -17,7 +20,7 @@ services:
     container_name: postgres
     restart: always
     networks:
-      - n8n_internal
+      - n8n_network
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -37,7 +40,7 @@ services:
     container_name: qdrant
     restart: always
     networks:
-      - n8n_internal
+      - n8n_network
     expose:
       - 6333
     volumes:
@@ -48,7 +51,7 @@ services:
     container_name: ollama
     restart: always
     networks:
-      - n8n_internal
+      - n8n_network
     expose:
       - 11434
     volumes:
@@ -61,12 +64,40 @@ services:
         ollama pull llama3.2 && \
         exec ollama serve --host 0.0.0.0
 
+  code-server:
+    build:
+      context: ./code-server-project
+      dockerfile: Dockerfile
+    container_name: code-server
+    restart: always
+    networks:
+      - n8n_network
+    expose:
+      - 8080
+    environment:
+      - TZ=Europe/Rome
+      - PASSWORD=codeserver!2025  # Fixed password
+    volumes:
+      - code_server_config:/home/coder/.config
+      - code_server_data:/home/coder/project
+      - workspace_projects:/home/coder/workspace
+      - ./projects:/home/coder/workspace/n8n-project
+    user: "0:0"  # Run as root to avoid permission issues
+    gpus: all    # Enable GPU access
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
   n8n-import:
     image: n8nio/n8n:latest
     container_name: n8n-import
     restart: "no"
     networks:
-      - n8n_internal
+      - n8n_network
     env_file:
       - .env
     environment:
@@ -96,7 +127,7 @@ services:
     container_name: n8n
     restart: always
     networks:
-      - n8n_internal
+      - n8n_network
     expose:
       - 5678
     env_file:
@@ -133,14 +164,14 @@ services:
     volumes:
       - nginx_ssl:/etc/nginx/ssl
     networks:
-      - n8n_internal
+      - n8n_network
 
   nginx:
     image: nginx:alpine
     container_name: nginx
     restart: always
     networks:
-      - n8n_internal
+      - n8n_network
     ports:
       - "80:80"
       - "443:443"
@@ -149,4 +180,5 @@ services:
       - nginx_ssl:/etc/nginx/ssl:ro
     depends_on:
       - n8n
+      - code-server
       - ssl-generator
