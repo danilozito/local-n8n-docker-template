@@ -21,10 +21,30 @@ Template Docker per l'implementazione locale di n8n con integrazione di Ollama, 
    cd code-server-project
    ```
 
-3. Crea il file .env per code-server:
+3. Modifica il file .env di code-server:
+   
+   **Linux/macOS**:
    ```bash
+   # Usando nano
+   nano .env
+   
+   # Oppure usando vim
+   vim .env
+   
+   # Oppure direttamente da terminale
    echo "CODE_SERVER_PASSWORD=la_tua_password" > .env
    ```
+   
+   **Windows**:
+   ```powershell
+   # Usando notepad
+   notepad .env
+   
+   # Oppure direttamente da PowerShell
+   Set-Content -Path .env -Value "CODE_SERVER_PASSWORD=la_tua_password"
+   ```
+   
+   Sostituisci "la_tua_password" con una password sicura di tua scelta.
 
 4. Avvia code-server:
    ```bash
