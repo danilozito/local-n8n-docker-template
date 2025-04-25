@@ -6,7 +6,9 @@ volumes:
 
 services:
   code-server:
-    image: codercom/code-server:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: code-server
     restart: always
     environment:
@@ -18,4 +20,12 @@ services:
       - ../:/home/coder/project/workspace
     ports:
       - "8080:8080"
-    user: "0:0"  # Run as root to avoid permission issues 
+    user: "0:0"  # Run as root to avoid permission issues
+    gpus: all    # Enable GPU access
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
