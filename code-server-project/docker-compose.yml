@@ -1,0 +1,22 @@
+version: '3.8'
+
+volumes:
+  code_server_config:
+  code_server_data:
+
+services:
+  code-server:
+    image: codercom/code-server:latest
+    container_name: code-server
+    restart: always
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Rome
+      - CODE_SERVER_PASSWORD=${CODE_SERVER_PASSWORD}
+    volumes:
+      - code_server_config:/home/coder/.config
+      - code_server_data:/home/coder/project
+      - ../:/home/coder/project/workspace
+    ports:
+      - "8080:8080" 
