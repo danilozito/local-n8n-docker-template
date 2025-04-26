@@ -18,8 +18,9 @@ services:
       - "11434:11434"
     volumes:
       - ollama_storage:/root/.ollama
-    gpus: all
-    command: "ollama serve"
+    # La configurazione GPU è commentata e può essere abilitata se necessario
+    # gpus: all
+    # Per attivare la GPU, rimuovere il commento dalla riga sopra
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:11434/api/health || exit 1"]
       interval: 30s
