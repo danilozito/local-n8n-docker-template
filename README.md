@@ -9,7 +9,7 @@ Template Docker per l'implementazione locale di n8n con integrazione di Ollama, 
 - Git
 - NVIDIA GPU con driver installati (per le funzionalità AI)
 
-## Setup Iniziale
+## Setup Iniziale Semplificato
 
 1. Clona il repository:
    ```bash
@@ -17,42 +17,65 @@ Template Docker per l'implementazione locale di n8n con integrazione di Ollama, 
    cd local-n8n-docker-template
    ```
 
-2. Genera le chiavi di sicurezza per n8n:
+2. Rendi eseguibile lo script di deploy:
    ```bash
-   # Rendi eseguibile lo script
-   chmod +x generate-keys.sh
-   
-   # Esegui lo script per generare le chiavi
-   ./generate-keys.sh
-   ```
-   Questo script:
-   - Crea un file `.env` se non esiste già
-   - Genera chiavi casuali per `N8N_ENCRYPTION_KEY` e `N8N_USER_MANAGEMENT_JWT_SECRET`
-   - Aggiorna `.env` con queste chiavi
-
-3. Modifica il file `.env` se necessario:
-   ```bash
-   # Personalizza altre variabili d'ambiente
-   nano .env
+   chmod +x deploy.sh
    ```
 
-4. Avvia l'intero stack con un solo comando:
+3. Avvia l'ambiente completo:
    ```bash
-   docker compose up -d
+   ./deploy.sh
    ```
 
-5. Verifica che tutti i servizi siano in esecuzione:
+4. Per fermare tutti i servizi:
    ```bash
-   docker compose ps
+   ./deploy.sh stop
    ```
 
-6. Accedi ai servizi:
-   - **n8n**: https://tuo-server/
-   - **code-server**: https://tuo-server/code/ (password: codeserver!2025)
+## Architettura Modulare
 
-## Utilizzo dei Progetti con GPU
+Il progetto utilizza un'architettura modulare con diversi file docker-compose:
 
-Per utilizzare la GPU nei tuoi progetti:
+1. **docker-compose.db.yml** - Database:
+   - PostgreSQL
+   - Qdrant
+
+2. **docker-compose.ai.yml** - AI:
+   - Ollama
+
+3. **docker-compose.apps.yml** - Applicazioni:
+   - n8n
+   - code-server
+   - nginx
+
+Lo script `deploy.sh` avvia i container nell'ordine corretto, con verifiche di disponibilità.
+
+## Accesso ai Servizi
+
+- **n8n**: http://tuo-server:5678
+- **code-server**: http://tuo-server:8080 (password: codeserver!2025)
+- **HTTPS via nginx**: https://tuo-server/
+
+## Workspace per Progetti
+
+Code-server è configurato con una struttura workspace organizzata:
+
+- `/home/coder/workspace/` è la directory principale per tutti i progetti
+- `/home/coder/workspace/n8n-project/` contiene il progetto n8n stesso
+- È possibile creare altre cartelle di progetto direttamente in `/home/coder/workspace/` 
+
+Per creare un nuovo progetto:
+1. Accedi a code-server (http://tuo-server:8080)
+2. Apri un terminale in code-server
+3. Crea una nuova directory di progetto:
+   ```bash
+   mkdir -p /home/coder/workspace/nuovo-progetto
+   cd /home/coder/workspace/nuovo-progetto
+   ```
+
+## Utilizzo della GPU con Python
+
+Per utilizzare la GPU nei tuoi progetti Python:
 
 1. Crea un nuovo progetto o accedi a uno esistente:
    ```bash
@@ -72,99 +95,29 @@ Per utilizzare la GPU nei tuoi progetti:
    python -c "import torch; print('CUDA disponibile:', torch.cuda.is_available())"
    ```
 
-3. Crea i tuoi script Python con supporto GPU:
-   ```python
-   # esempio.py
-   import tensorflow as tf
-   print("Dispositivi GPU disponibili:", tf.config.list_physical_devices('GPU'))
-   
-   # Il tuo codice ML/AI qui
-   ```
+## Risoluzione dei Problemi
 
-4. Esegui i tuoi script:
-   ```bash
-   python esempio.py
-   ```
+Se riscontri problemi con un servizio specifico, puoi controllare i log:
 
-Per notebook Jupyter:
-1. Crea un file con estensione `.ipynb` nel tuo progetto
-2. Il supporto Jupyter si attiverà automaticamente in code-server
-3. I notebook avranno accesso alla GPU configurata
+```bash
+docker logs <container-name>
+```
 
-## Struttura del Progetto
+Puoi anche gestire individualmente i servizi:
 
-Il progetto include:
+```bash
+# Solo database
+docker compose -f docker-compose.db.yml up -d
 
-- **n8n**: Automazione workflow
-- **ollama**: AI locale con accesso GPU
-- **qdrant**: Vector database
-- **postgres**: Database relazionale
-- **nginx**: Reverse proxy con SSL
-- **code-server**: Editor web basato su VS Code con Python 3.12 e supporto GPU
+# Solo AI
+docker compose -f docker-compose.ai.yml up -d
 
-### Workspace per Progetti
-
-Code-server è configurato con una struttura workspace organizzata:
-
-- `/home/coder/workspace/` è la directory principale per tutti i progetti
-- `/home/coder/workspace/n8n-project/` contiene il progetto n8n stesso
-- È possibile creare altre cartelle di progetto direttamente in `/home/coder/workspace/` 
-
-Per creare un nuovo progetto:
-1. Accedi a code-server (https://tuo-server/code/)
-2. Apri un terminale in code-server
-3. Crea una nuova directory di progetto:
-   ```bash
-   mkdir -p /home/coder/workspace/nuovo-progetto
-   cd /home/coder/workspace/nuovo-progetto
-   ```
-4. Inizia a lavorare sul tuo progetto
-
-Tutti i progetti creati in `/home/coder/workspace/` saranno persistenti grazie al volume Docker dedicato.
-
-## Accesso Sicuro tramite HTTPS
-
-Entrambi i servizi n8n e code-server sono configurati per essere accessibili tramite HTTPS:
-
-- **n8n**: https://tuo-server/
-- **code-server**: https://tuo-server/code/
-
-La configurazione HTTPS è gestita tramite Nginx come reverse proxy, che utilizza certificati SSL generati automaticamente. I certificati sono self-signed, quindi potresti ricevere un avviso dal browser la prima volta che accedi. Puoi accettare l'eccezione o, per un ambiente di produzione, sostituire i certificati con certificati validi di Let's Encrypt.
-
-### Personalizzazione dei Certificati SSL
-
-Se desideri utilizzare certificati validi:
-
-1. Modifica il generatore SSL in `nginx/Dockerfile`
-2. Sostituisci i certificati generati con certificati validi
-3. Riavvia il container nginx
-
-## Gestione dei Servizi
-
-- Per fermare tutti i servizi:
-  ```bash
-  docker compose down
-  ```
-
-- Per riavviare tutti i servizi:
-  ```bash
-  docker compose up -d
-  ```
-
-- Per vedere i log:
-  ```bash
-  docker compose logs -f
-  ```
-
-- Per vedere i log di un servizio specifico:
-  ```bash
-  docker compose logs -f service_name
-  ```
+# Solo applicazioni
+docker compose -f docker-compose.apps.yml up -d
+```
 
 ## Note
 
 - Le configurazioni sono persistenti nei volumi Docker
-- Code-server supporta estensioni e temi di VS Code
-- Il progetto n8n è accessibile solo via HTTPS (porta 443)
-- Code-server è accessibile via HTTPS all'indirizzo https://tuo-server/code/
 - Tutti i servizi sono configurati per riavviarsi automaticamente in caso di crash
+- Puoi personalizzare ulteriormente le configurazioni modificando i file docker-compose specifici
