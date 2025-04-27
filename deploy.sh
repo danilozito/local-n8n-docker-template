@@ -42,6 +42,23 @@ if [ "$1" = "stop" ]; then
   stop_all
 fi
 
+# Controlla se è stato richiesto il debug
+if [ "$1" = "debug" ]; then
+  log "Modalità debug: verifica dello stato dei container..."
+  docker ps -a
+  
+  log "Log di Ollama:"
+  docker logs ollama | tail -30
+  
+  log "Controllando se Ollama risponde:"
+  docker exec -it ollama wget --spider --quiet http://localhost:11434 && echo "Ollama risponde" || echo "Ollama non risponde"
+  
+  log "Test comando ollama all'interno del container:"
+  docker exec -it ollama ollama --help
+  
+  exit 0
+fi
+
 # Imposta valori predefiniti per le variabili d'ambiente
 if [ ! -f .env ]; then
   log "File .env non trovato, creazione in corso..."
