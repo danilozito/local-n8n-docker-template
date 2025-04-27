@@ -82,28 +82,11 @@ fi
 
 # Crea directory necessarie con i permessi corretti
 log "Creazione directory necessarie..."
-mkdir -p projects shared
+mkdir -p projects shared code-server-project
 sudo mkdir -p n8n/demo-data
 sudo mkdir -p n8n/demo-data/credentials n8n/demo-data/workflows
 sudo touch n8n/demo-data/credentials/.gitkeep n8n/demo-data/workflows/.gitkeep
 sudo chmod -R 777 n8n
-
-# Crea la directory per i certificati SSL e genera i certificati
-log "Generazione dei certificati SSL per $SERVER_IP..."
-mkdir -p ssl_certs
-DOMAIN="$SERVER_IP"
-
-# Genera la chiave privata
-openssl genrsa -out ssl_certs/server.key 2048
-
-# Genera il certificato self-signed
-openssl req -new -x509 -key ssl_certs/server.key -out ssl_certs/server.crt -days 365 -subj "/CN=$DOMAIN"
-
-# Imposta i permessi corretti
-chmod 644 ssl_certs/server.crt
-chmod 600 ssl_certs/server.key
-
-echo "Certificato generato per CN=$DOMAIN"
 
 # Crea network
 log "Creazione della rete Docker..."
@@ -152,7 +135,7 @@ if [ $attempt -lt $max_attempts ]; then
 fi
 
 # FASE 3: Deploy applicazioni
-log "3/3 - Deploy delle applicazioni (n8n, code-server, nginx)..."
+log "3/3 - Deploy delle applicazioni (n8n, code-server)..."
 
 # Avvia i container
 docker compose -f docker-compose.apps.yml down 2>/dev/null || true
@@ -184,7 +167,7 @@ echo -e "${PURPLE}INFORMAZIONI DI ACCESSO${NC}"
 echo -e "${GREEN}==========================================${NC}"
 echo -e "n8n:         ${YELLOW}http://$SERVER_IP:5678${NC}"
 echo -e "code-server: ${YELLOW}http://$SERVER_IP:8080${NC} (password: codeserver!2025)"
-echo -e "HTTPS via nginx: ${YELLOW}https://$SERVER_IP${NC}"
+echo -e "Ollama API:  ${YELLOW}http://$SERVER_IP:11434${NC}"
 echo -e "${GREEN}==========================================${NC}"
 echo -e "Per visualizzare i logs: ${BLUE}docker logs <container-name>${NC}"
 echo -e "Per fermare tutto: ${BLUE}./deploy.sh stop${NC}"
