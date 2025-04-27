@@ -4,17 +4,17 @@
 CN=${1:-localhost}
 
 # Crea la directory per i certificati se non esiste
-mkdir -p /etc/nginx/ssl
+mkdir -p /ssl
 
 # Genera la chiave privata
-openssl genrsa -out /etc/nginx/ssl/server.key 2048
+openssl genrsa -out /ssl/server.key 2048
 
 # Genera il certificato self-signed con il CN appropriato
-openssl req -new -x509 -key /etc/nginx/ssl/server.key -out /etc/nginx/ssl/server.crt -days 365 -subj "/CN=$CN"
+openssl req -new -x509 -key /ssl/server.key -out /ssl/server.crt -days 365 -subj "/CN=$CN"
 
 # Imposta i permessi corretti
-chmod 644 /etc/nginx/ssl/server.crt
-chmod 600 /etc/nginx/ssl/server.key
+chmod 644 /ssl/server.crt
+chmod 600 /ssl/server.key
 
 echo "Certificato generato per CN=$CN"
 
