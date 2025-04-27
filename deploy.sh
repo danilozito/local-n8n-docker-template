@@ -10,6 +10,9 @@ YELLOW='\033[0;33m'
 PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
+# IP del server (modifica secondo le tue esigenze)
+SERVER_IP="192.168.0.49"
+
 log() {
   echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')] ${GREEN}$1${NC}"
 }
@@ -65,6 +68,7 @@ if [ ! -f .env ]; then
   echo "POSTGRES_USER=n8n" > .env
   echo "POSTGRES_PASSWORD=n8n" >> .env
   echo "POSTGRES_DB=n8n" >> .env
+  echo "N8N_HOST=$SERVER_IP" >> .env
   
   # Genera chiavi di sicurezza casuali
   ENCRYPTION_KEY=$(openssl rand -hex 24)
@@ -83,6 +87,23 @@ sudo mkdir -p n8n/demo-data
 sudo mkdir -p n8n/demo-data/credentials n8n/demo-data/workflows
 sudo touch n8n/demo-data/credentials/.gitkeep n8n/demo-data/workflows/.gitkeep
 sudo chmod -R 777 n8n
+
+# Crea la directory per i certificati SSL e genera i certificati
+log "Generazione dei certificati SSL per $SERVER_IP..."
+mkdir -p ssl_certs
+DOMAIN="$SERVER_IP"
+
+# Genera la chiave privata
+openssl genrsa -out ssl_certs/server.key 2048
+
+# Genera il certificato self-signed
+openssl req -new -x509 -key ssl_certs/server.key -out ssl_certs/server.crt -days 365 -subj "/CN=$DOMAIN"
+
+# Imposta i permessi corretti
+chmod 644 ssl_certs/server.crt
+chmod 600 ssl_certs/server.key
+
+echo "Certificato generato per CN=$DOMAIN"
 
 # Crea network
 log "Creazione della rete Docker..."
@@ -133,33 +154,9 @@ fi
 # FASE 3: Deploy applicazioni
 log "3/3 - Deploy delle applicazioni (n8n, code-server, nginx)..."
 
-# Rimuovi il vecchio volume SSL se esiste
-log "Rimozione del vecchio volume SSL per forzare la rigenerazione dei certificati..."
-docker volume rm nginx_ssl 2>/dev/null || true
-
 # Avvia i container
 docker compose -f docker-compose.apps.yml down 2>/dev/null || true
 docker compose -f docker-compose.apps.yml up -d
-
-# Verifica che ssl-generator abbia completato la generazione dei certificati
-log "Verifica della generazione dei certificati SSL..."
-attempt=1
-max_attempts=10
-until docker logs $(docker ps -qf "name=ssl-generator") 2>&1 | grep -q "Certificato generato"; do
-  if [ $attempt -eq $max_attempts ]; then
-    warn "Timeout durante l'attesa della generazione dei certificati SSL. Controlla i log con: docker logs ssl-generator"
-    break
-  fi
-  log "Attesa per la generazione dei certificati SSL ($attempt/$max_attempts)..."
-  sleep 2
-  attempt=$((attempt+1))
-done
-
-if [ $attempt -lt $max_attempts ]; then
-  log "Certificati SSL generati con successo!"
-  # Riavvia nginx per assicurarsi che usi i nuovi certificati
-  docker restart nginx
-fi
 
 log "Verifica lo stato dei container:"
 docker ps
@@ -185,9 +182,9 @@ fi
 echo -e "\n${GREEN}==========================================${NC}"
 echo -e "${PURPLE}INFORMAZIONI DI ACCESSO${NC}"
 echo -e "${GREEN}==========================================${NC}"
-echo -e "n8n:         ${YELLOW}http://localhost:5678${NC}"
-echo -e "code-server: ${YELLOW}http://localhost:8080${NC} (password: codeserver!2025)"
-echo -e "HTTPS via nginx: ${YELLOW}https://localhost${NC}"
+echo -e "n8n:         ${YELLOW}http://$SERVER_IP:5678${NC}"
+echo -e "code-server: ${YELLOW}http://$SERVER_IP:8080${NC} (password: codeserver!2025)"
+echo -e "HTTPS via nginx: ${YELLOW}https://$SERVER_IP${NC}"
 echo -e "${GREEN}==========================================${NC}"
 echo -e "Per visualizzare i logs: ${BLUE}docker logs <container-name>${NC}"
 echo -e "Per fermare tutto: ${BLUE}./deploy.sh stop${NC}"
