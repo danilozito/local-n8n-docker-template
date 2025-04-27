@@ -107,4 +107,29 @@ services:
     volumes:
       - code_server_data:/home/coder/project/workspace
     environment:
-      - PASSWORD=codeserver!2025 
+      - PASSWORD=codeserver!2025
+
+  # Qdrant UI
+  qdrant-ui:
+    image: qdrant/qdrant-ui:latest
+    container_name: qdrant-ui
+    restart: always
+    networks:
+      - n8n_network
+    ports:
+      - "6334:6334"
+    environment:
+      - VITE_QDRANT_URL=http://qdrant:6333
+
+  # PostgreSQL Admin
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    restart: always
+    networks:
+      - n8n_network
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@tuodominio.it
+      - PGADMIN_DEFAULT_PASSWORD=changeme
+    ports:
+      - "8081:80" 

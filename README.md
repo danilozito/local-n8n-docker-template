@@ -49,9 +49,11 @@ Il progetto utilizza un unico file docker-compose.yml che include tutti i serviz
 
 ## Accesso ai Servizi
 
-- **n8n**: http://tuo-server:5678
-- **code-server**: http://tuo-server:8080 (password: codeserver!2025)
-- **Ollama API**: http://tuo-server:11434
+- **n8n**: http://<TUO_IP>:5678
+- **code-server**: http://<TUO_IP>:8080 (password: codeserver!2025)
+- **Ollama API**: http://<TUO_IP>:11434
+- **Qdrant UI**: http://<TUO_IP>:6334
+- **pgAdmin**: http://<TUO_IP>:8081 (default email: admin@tuodominio.it, password: changeme)
 
 ## Ambiente code-server per AI/ML
 
