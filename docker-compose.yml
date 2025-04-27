@@ -111,7 +111,7 @@ services:
 
   # Qdrant UI
   qdrant-ui:
-    image: qdrant/qdrant-ui:latest
+    image: qdrant/ui:latest
     container_name: qdrant-ui
     restart: always
     networks:
