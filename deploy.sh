@@ -76,10 +76,13 @@ if [ ! -f .env ]; then
   log "File .env creato con le chiavi di sicurezza generate"
 fi
 
-# Crea directory necessarie
-mkdir -p projects shared n8n/demo-data
-mkdir -p n8n/demo-data/credentials n8n/demo-data/workflows
-touch n8n/demo-data/credentials/.gitkeep n8n/demo-data/workflows/.gitkeep
+# Crea directory necessarie con i permessi corretti
+log "Creazione directory necessarie..."
+mkdir -p projects shared
+sudo mkdir -p n8n/demo-data
+sudo mkdir -p n8n/demo-data/credentials n8n/demo-data/workflows
+sudo touch n8n/demo-data/credentials/.gitkeep n8n/demo-data/workflows/.gitkeep
+sudo chmod -R 777 n8n
 
 # Crea network
 log "Creazione della rete Docker..."

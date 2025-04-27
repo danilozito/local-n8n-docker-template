@@ -3,6 +3,7 @@ version: '3.8'
 volumes:
   n8n_data:
   nginx_ssl:
+  code_server_data:
 
 networks:
   n8n_network:
@@ -39,11 +40,26 @@ services:
     depends_on:
       - ssl-generator
 
+  code-server:
+    image: codercom/code-server:latest
+    container_name: code-server
+    restart: always
+    networks:
+      - n8n_network
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - code_server_data:/home/coder
+      - ./code-server-project:/home/coder/workspace
+    environment:
+      - PASSWORD=codeserver!2025
+      - DOCKER_USER=coder
+
   ssl-generator:
     build:
       context: ./nginx
     image: ssl-generator
-    command: ["gen-ssl-cert.sh", "${DOMAIN:-localhost}"]
+    command: ["generate-ssl.sh", "${DOMAIN:-localhost}"]
     volumes:
       - nginx_ssl:/ssl
     networks:
