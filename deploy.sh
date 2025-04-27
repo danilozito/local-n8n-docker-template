@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script per il deploy dei container in ordine
+# Script per il deploy semplificato con un unico file docker-compose
 
 # Colori per i log
 RED='\033[0;31m'
@@ -27,15 +27,8 @@ warn() {
 
 # Ferma tutti i container
 stop_all() {
-  log "Arresto delle applicazioni..."
-  docker compose -f docker-compose.apps.yml down
-
-  log "Arresto di Ollama..."
-  docker compose -f docker-compose.ai.yml down
-
-  log "Arresto dei database..."
-  docker compose -f docker-compose.db.yml down
-
+  log "Arresto di tutti i servizi..."
+  docker compose down
   log "Tutti i container sono stati fermati."
   exit 0
 }
@@ -82,42 +75,40 @@ fi
 
 # Crea directory necessarie con i permessi corretti
 log "Creazione directory necessarie..."
-mkdir -p projects shared code-server-project
+mkdir -p projects shared 
 sudo mkdir -p n8n/demo-data
 sudo mkdir -p n8n/demo-data/credentials n8n/demo-data/workflows
 sudo touch n8n/demo-data/credentials/.gitkeep n8n/demo-data/workflows/.gitkeep
 sudo chmod -R 777 n8n
 
-# Crea network
-log "Creazione della rete Docker..."
-docker network create n8n_network 2>/dev/null || true
+# Avvia i container
+log "Avvio di tutti i servizi..."
 
-# FASE 1: Deploy database
-log "1/3 - Deploy dei database (PostgreSQL e Qdrant)..."
-docker compose -f docker-compose.db.yml down -v 2>/dev/null || true
-docker compose -f docker-compose.db.yml up -d
+# Costruzione dell'immagine code-server personalizzata
+log "Costruzione dell'immagine code-server personalizzata (potrebbe richiedere alcuni minuti la prima volta)..."
+docker compose down 2>/dev/null || true
+docker compose up -d
 
-# Attendi che postgres sia pronto
+log "Verifica lo stato dei container:"
+docker ps
+
+# Verifica che i servizi siano pronti
 log "Attesa per PostgreSQL..."
 attempt=1
 max_attempts=30
 until docker exec postgres pg_isready -h localhost -U ${POSTGRES_USER:-n8n} -d ${POSTGRES_DB:-n8n} > /dev/null 2>&1; do
   if [ $attempt -eq $max_attempts ]; then
     error "PostgreSQL non è diventato disponibile in tempo. Controlla i log con: docker logs postgres"
-    exit 1
+    break
   fi
   log "Attesa per PostgreSQL ($attempt/$max_attempts)..."
   sleep 2
   attempt=$((attempt+1))
 done
-log "PostgreSQL è pronto!"
+if [ $attempt -lt $max_attempts ]; then
+  log "PostgreSQL è pronto!"
+fi
 
-# FASE 2: Deploy Ollama
-log "2/3 - Deploy di Ollama (AI)..."
-docker compose -f docker-compose.ai.yml down 2>/dev/null || true
-docker compose -f docker-compose.ai.yml up -d
-
-# Attendi che Ollama sia pronto
 log "Attesa per Ollama..."
 attempt=1
 max_attempts=30
@@ -134,17 +125,6 @@ if [ $attempt -lt $max_attempts ]; then
   log "Ollama è pronto!"
 fi
 
-# FASE 3: Deploy applicazioni
-log "3/3 - Deploy delle applicazioni (n8n, code-server)..."
-
-# Avvia i container
-docker compose -f docker-compose.apps.yml down 2>/dev/null || true
-docker compose -f docker-compose.apps.yml up -d
-
-log "Verifica lo stato dei container:"
-docker ps
-
-# Attendi che code-server sia pronto
 log "Attesa per code-server..."
 attempt=1
 max_attempts=30
@@ -168,6 +148,8 @@ echo -e "${GREEN}==========================================${NC}"
 echo -e "n8n:         ${YELLOW}http://$SERVER_IP:5678${NC}"
 echo -e "code-server: ${YELLOW}http://$SERVER_IP:8080${NC} (password: codeserver!2025)"
 echo -e "Ollama API:  ${YELLOW}http://$SERVER_IP:11434${NC}"
+echo -e "${GREEN}==========================================${NC}"
+echo -e "Note: ${YELLOW}code-server viene avviato con Python, Node.js, TensorFlow, PyTorch e altre librerie AI/ML preinstallate${NC}"
 echo -e "${GREEN}==========================================${NC}"
 echo -e "Per visualizzare i logs: ${BLUE}docker logs <container-name>${NC}"
 echo -e "Per fermare tutto: ${BLUE}./deploy.sh stop${NC}"

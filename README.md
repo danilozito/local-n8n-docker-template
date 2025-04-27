@@ -32,67 +32,80 @@ Template Docker per l'implementazione locale di n8n con integrazione di Ollama, 
    ./deploy.sh stop
    ```
 
-## Architettura Modulare
+## Architettura Unificata
 
-Il progetto utilizza un'architettura modulare con diversi file docker-compose:
+Il progetto utilizza un unico file docker-compose.yml che include tutti i servizi:
 
-1. **docker-compose.db.yml** - Database:
-   - PostgreSQL
-   - Qdrant
+1. **Database**:
+   - PostgreSQL - Database relazionale per n8n
+   - Qdrant - Database vettoriale per funzionalità AI
 
-2. **docker-compose.ai.yml** - AI:
-   - Ollama
+2. **AI**:
+   - Ollama - Modelli di linguaggio locali con supporto GPU
 
-3. **docker-compose.apps.yml** - Applicazioni:
-   - n8n
-   - code-server
-   - nginx
-
-Lo script `deploy.sh` avvia i container nell'ordine corretto, con verifiche di disponibilità.
+3. **Applicazioni**:
+   - n8n - Piattaforma di automazione no-code
+   - code-server - VS Code nel browser con strumenti per AI/ML preinstallati
 
 ## Accesso ai Servizi
 
 - **n8n**: http://tuo-server:5678
 - **code-server**: http://tuo-server:8080 (password: codeserver!2025)
-- **HTTPS via nginx**: https://tuo-server/
+- **Ollama API**: http://tuo-server:11434
+
+## Ambiente code-server per AI/ML
+
+Code-server è configurato con un ambiente di sviluppo completo per AI/ML:
+
+- **Python 3.12** con pyenv
+- **Librerie per Data Science e ML**:
+  - NumPy, Pandas, Matplotlib
+  - scikit-learn
+  - TensorFlow
+  - PyTorch
+  - JupyterLab
+- **Node.js** per sviluppo web
+- **Estensioni VS Code** preinstallate per Python e Jupyter
+
+Tutte le librerie AI/ML sono già configurate per utilizzare la GPU se disponibile.
 
 ## Workspace per Progetti
 
 Code-server è configurato con una struttura workspace organizzata:
 
-- `/home/coder/workspace/` è la directory principale per tutti i progetti
-- `/home/coder/workspace/n8n-project/` contiene il progetto n8n stesso
-- È possibile creare altre cartelle di progetto direttamente in `/home/coder/workspace/` 
+- La directory principale del progetto è montata in `/home/coder/project/workspace`
+- Puoi creare nuovi progetti o modificare file direttamente da code-server
 
 Per creare un nuovo progetto:
 1. Accedi a code-server (http://tuo-server:8080)
 2. Apri un terminale in code-server
 3. Crea una nuova directory di progetto:
    ```bash
-   mkdir -p /home/coder/workspace/nuovo-progetto
-   cd /home/coder/workspace/nuovo-progetto
+   mkdir -p /home/coder/project/workspace/nuovo-progetto
+   cd /home/coder/project/workspace/nuovo-progetto
    ```
 
-## Utilizzo della GPU con Python
+## Integrazione tra n8n e Ollama
 
-Per utilizzare la GPU nei tuoi progetti Python:
+Per utilizzare Ollama da n8n:
 
-1. Crea un nuovo progetto o accedi a uno esistente:
-   ```bash
-   mkdir -p /home/coder/workspace/ml-project
-   cd /home/coder/workspace/ml-project
-   ```
+1. In n8n, crea una nuova credenziale HTTP:
+   - Settings → Credentials → Add → HTTP
+   - Nome: "Ollama API"
+   - URL base: `http://ollama:11434`
 
-2. Verifica l'accesso alla GPU:
-   ```bash
-   # Verifica la disponibilità della GPU
-   nvidia-smi
-   
-   # Verifica che TensorFlow possa accedere alla GPU
-   python -c "import tensorflow as tf; print(tf.config.list_physical_devices('GPU'))"
-   
-   # Verifica che PyTorch possa accedere alla GPU
-   python -c "import torch; print('CUDA disponibile:', torch.cuda.is_available())"
+2. Crea un workflow che utilizza la credenziale:
+   - Aggiungi un nodo HTTP Request
+   - Seleziona la credenziale "Ollama API"
+   - Metodo: POST
+   - Endpoint: `/api/generate`
+   - Body:
+   ```json
+   {
+     "model": "llama3",
+     "prompt": "Ciao, come stai?",
+     "stream": false
+   }
    ```
 
 ## Risoluzione dei Problemi
@@ -103,21 +116,14 @@ Se riscontri problemi con un servizio specifico, puoi controllare i log:
 docker logs <container-name>
 ```
 
-Puoi anche gestire individualmente i servizi:
+Per una verifica dello stato dettagliata:
 
 ```bash
-# Solo database
-docker compose -f docker-compose.db.yml up -d
-
-# Solo AI
-docker compose -f docker-compose.ai.yml up -d
-
-# Solo applicazioni
-docker compose -f docker-compose.apps.yml up -d
+./deploy.sh debug
 ```
 
 ## Note
 
 - Le configurazioni sono persistenti nei volumi Docker
 - Tutti i servizi sono configurati per riavviarsi automaticamente in caso di crash
-- Puoi personalizzare ulteriormente le configurazioni modificando i file docker-compose specifici
+- Puoi personalizzare ulteriormente le configurazioni modificando il file docker-compose.yml
